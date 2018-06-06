@@ -15,12 +15,15 @@
  */
 
 #include "process_unicode_common.h"
+#include "eeprom.h"
 
+static uint8_t input_mode;
 uint8_t mods;
 
 void set_unicode_input_mode(uint8_t os_target)
 {
   input_mode = os_target;
+  eeprom_update_byte(EECONFIG_UNICODEMODE, os_target);
 }
 
 uint8_t get_unicode_input_mode(void) {
@@ -45,6 +48,9 @@ void unicode_input_start (void) {
   switch(input_mode) {
   case UC_OSX:
     register_code(KC_LALT);
+    break;
+  case UC_OSX_RALT:
+    register_code(KC_RALT);
     break;
   case UC_LNX:
     register_code(KC_LCTL);
@@ -75,6 +81,9 @@ void unicode_input_finish (void) {
     case UC_WIN:
       unregister_code(KC_LALT);
       break;
+    case UC_OSX_RALT:
+      unregister_code(KC_RALT);
+      break;
     case UC_LNX:
       register_code(KC_SPC);
       unregister_code(KC_SPC);
@@ -90,6 +99,18 @@ void unicode_input_finish (void) {
   if (mods & MOD_BIT(KC_RALT)) register_code(KC_RALT);
   if (mods & MOD_BIT(KC_LGUI)) register_code(KC_LGUI);
   if (mods & MOD_BIT(KC_RGUI)) register_code(KC_RGUI);
+}
+
+__attribute__((weak))
+uint16_t hex_to_keycode(uint8_t hex)
+{
+  if (hex == 0x0) {
+    return KC_0;
+  } else if (hex < 0xA) {
+    return KC_1 + (hex - 0x1);
+  } else {
+    return KC_A + (hex - 0xA);
+  }
 }
 
 void register_hex(uint16_t hex) {
